@@ -64,3 +64,23 @@ canvas {
   image-rendering: pixelated; /* mache ja sowieso nen grid */
   cursor: crosshair; /* mach den cursor cool */
 }
+
+.steuerung {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.8rem 0;
+}
+
+.steuerung button {
+  border: 1px solid currentColor;
+  padding: 0.5rem 1rem;
+  font-family: "Special Elite", "Courier New", monospace;
+  background: var(--bg);
+}
+
+.steuerung button:hover,
+.steuerung button[aria-pressed=true] {
+  background: var(--text);
+  color: var(--bg);
+}
