@@ -282,6 +282,11 @@ nachbar3Feld.addEventListener("change", () => {
   zeichne();
 });
 
+window.addEventListener("resize", () => {
+  passeGroesseAn();
+  zeichne();
+})
+
 passeGroesseAn();
 zufall(0.5);
 zeichne();
