@@ -84,3 +84,12 @@ canvas {
   background: var(--text);
   color: var(--bg);
 }
+
+.steuerung input {
+  width: 3.5rem;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 1px solid currentColor;
+  padding: 0.3rem 0.5rem;
+}
