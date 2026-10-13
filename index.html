@@ -1,13 +1,14 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Conways-game-of-life</title>
+    <title>Conways Game of Life</title>
     <link href="style.css" rel="stylesheet">
   </head>
   <body>
-    <main class="seite">
+    <!-- werkbank: hochkant untereinander, quer Canvas links und Bedienung rechts (style.css) -->
+    <main class="seite werkbank">
       <header class="projekt-kopf">
         <h1>Conways Game of Life</h1>
         <ul class="tags">
@@ -15,22 +16,24 @@
           <li>projekt</li>
         </ul>
       </header>
-    
-      <canvas id="grid"></canvas>
 
-      <div class="steuerung">
-        <button id="simulationBtn">Stoppen</button>
-        <button id="leerBtn">Leeren</button>
-        <button id="zufallBtn">Zufall</button>
+      <div class="canvas-wrapper">
+        <canvas id="grid"></canvas>
       </div>
-      <div class="steuerung">
-        <label>Nachbar zum Leben 1 <input type="number" id="nachbar1" min="0" max="8" step="1"></label>
-        <label>Nachbar zum Leben 2 <input type="number" id="nachbar2" min="0" max="8" step="1"></label>
-        <label>Nachbar zum Beleben <input type="number" id="nachbar3" min="1" max="8" step="1"></label>
 
+      <div class="bedienung">
+        <div class="steuerung">
+          <button type="button" id="simulationBtn">Stoppen</button>
+          <button type="button" id="leerBtn">Leeren</button>
+          <button type="button" id="zufallBtn">Zufall</button>
+        </div>
+        <div class="steuerung">
+          <label>Nachbar zum Leben 1 <input type="number" id="nachbar1" min="0" max="8" step="1"></label>
+          <label>Nachbar zum Leben 2 <input type="number" id="nachbar2" min="0" max="8" step="1"></label>
+          <label>Nachbar zum Beleben <input type="number" id="nachbar3" min="1" max="8" step="1"></label>
+        </div>
       </div>
-    
     </main>
-    <script src=script.js></script>
+    <script src="script.js"></script>
   </body>
 </html>

@@ -1,12 +1,11 @@
 const SPALTEN = 80; // Auflösung der x-Achse, wie breit sie ist
 const ZEILEN = 60; // Auflösung der y-Achse, wie hoch sie ist
-const MILLI = 100;
-const LUECKE = SPALTEN / ZEILEN / 10;
-const INTERVALL = 100;
+const LUECKE = 0.13; // Abstand zwischen den Zellen als Anteil der Zellgröße
+const INTERVALL = 100; // ms zwischen zwei Generationen
 
 function hole(id) {
   const element = document.getElementById(id);
-  if (!element) throw new Error("wasnhier los");
+  if (!element) throw new Error(`Im HTML fehlt ein Element mit id="${id}"`);
   return element;
 }
 
@@ -22,13 +21,15 @@ let letzteZeit = 0;
 
 let zelle;
 
+// Regeln: eine lebende Zelle überlebt mit nachbar1 oder nachbar2 Nachbarn,
+// eine tote Zelle wird mit genau nachbar3 Nachbarn lebendig (Conway: 2, 3 und 3)
 let nachbar1 = 2;
 let nachbar2 = 3;
 let nachbar3 = 3;
 
-let nachbar1Feld = hole("nachbar1")
-let nachbar2Feld = hole("nachbar2")
-let nachbar3Feld = hole("nachbar3")
+const nachbar1Feld = hole("nachbar1");
+const nachbar2Feld = hole("nachbar2");
+const nachbar3Feld = hole("nachbar3");
 
 // array mit den Zeilen und Spalten und dann durchgehen und malen
 // entweder hat jeder eintrag ein paar (x, y)
@@ -48,7 +49,7 @@ let grid = new Uint8Array(SPALTEN * ZEILEN);
 function passeGroesseAn() {
   const dpr = Math.max(window.devicePixelRatio || 1, 2);
   canvas.width = Math.round(canvas.clientWidth * dpr);
-  canvas.height = Math.round((canvas.width / 4) * 3); // Seitenverhältnis des Spielfelds
+  canvas.height = Math.round((canvas.width / SPALTEN) * ZEILEN); // Seitenverhältnis des Spielfelds (80 : 60 = 4 : 3)
   zelle = canvas.width / SPALTEN;
   // console.log(canvas.width, canvas.height, SPALTEN, ZEILEN)
 }
@@ -109,8 +110,9 @@ function nachbarn(x, y) {
       //  |_____|_____|_____|
       //
       const wessenNachbarX = (x + nebenX + SPALTEN) % SPALTEN;
-      // % SPALTEN, damit es im rahmen bleibt - dafür muss man natürlich dann + SPALTEN, sonst kommt immer 0
-      // also fall es mit +1 oder -1 über den Rahmen geht
+      // % SPALTEN, damit es im rahmen bleibt: rechts raus (80) kommt links wieder rein (0)
+      // + SPALTEN, weil links raus sonst -1 wäre, und -1 % 80 ist in JavaScript -1 (kein gültiger Index)
+      // mit + SPALTEN wird daraus 79 % 80 = 79, die Zelle am anderen Rand
       const wessenNachbarY = (y + nebenY + ZEILEN) % ZEILEN;
       anzahl += grid[index(wessenNachbarX, wessenNachbarY)];
     }
@@ -151,7 +153,8 @@ function getroffeneZelle(event) {
   // also zuerst x-Koordinate im rect finden 
   // im verhältnis mit breite von rect setzen (prozentual)
   // Mit anzahl der Spalten multiplizieren, denn alles Zellen ausrechnen und index ist in Spalten
-  // FLOOR weil Spalte nach rechts aufgezogen wird --> Spalte 8.8 ist immer noch Spalte 9 (für punkte dann -1)
+  // FLOOR weil eine Zelle von ihrem linken Rand bis kurz vor den nächsten geht --> 8.8 liegt in der Zelle mit Index 8
+  // (das ist die 9. Spalte, weil wir bei 0 anfangen zu zählen)
   const y = Math.floor((event.clientY - rect.top) / rect.height * ZEILEN);
   // left und top --> Weil es von links oben anfängt zu malen mit
   //      (0, 0) _____________________ (width, 0)
@@ -164,8 +167,9 @@ function getroffeneZelle(event) {
     y: Math.min(Math.max(y, 0), ZEILEN - 1)
   };
   // ein Punkt zurück mit koordinaten in Spalte und Zeile.
-  // also zwischen 0 und Spaltenanzahl - 1
-  // wie wir vorhin sahen ist Spalte 1 bis 0.9 (da aber koordinaten bei (0,0) beginnen muss -1)
+  // also zwischen 0 und Spaltenanzahl - 1 (der letzte Index, weil wir bei 0 anfangen)
+  // begrenzen, weil der Zeiger beim Ziehen den Canvas verlassen kann (setPointerCapture):
+  // dann wäre x negativ oder >= SPALTEN, und genau am rechten Rand kommt x = SPALTEN raus
 }
 
 function linieMalen(von, bis) {
@@ -210,15 +214,17 @@ function nichtMehrMalen() {
   letzteZelle = null;
 }
 
-canvas.addEventListener("pointerup", nichtMehrMalen());
-canvas.addEventListener("pointercancel", nichtMehrMalen());
+// ohne Klammern: die Funktion selbst übergeben, damit der Browser sie beim Loslassen aufruft
+// nichtMehrMalen() würde sie sofort einmal ausführen und undefined übergeben
+canvas.addEventListener("pointerup", nichtMehrMalen);
+canvas.addEventListener("pointercancel", nichtMehrMalen);
 
 function leeren() {
   grid.fill(0);
 }
 
-function startStop(truefalse) {
-  simuliert = truefalse;
+function startStop(an) {
+  simuliert = an;
   simulationBtn.textContent = simuliert ? "Stoppen" : "Simulieren";
 }
 
@@ -247,6 +253,8 @@ function schleife(zeit) {
   requestAnimationFrame(schleife);
 }
 
+// sinnvolle Hilfsfunktion, dass die Eingabe auch immer eine
+// Ganzzahl und im Rahmen bleibt
 function leseGanzzahl(feld, min, max, bisher) {
   const eingabe = feld.value.trim();
   const zahl = Number(eingabe);
@@ -263,31 +271,35 @@ function leseGanzzahl(feld, min, max, bisher) {
 
 nachbar1Feld.addEventListener("change", () => {
   nachbar1 = leseGanzzahl(nachbar1Feld, 0, 8, nachbar1);
-  leeren();
-  zufall(0.25);
+  zufall(0.25); // überschreibt jede Zelle, leeren davor ist nicht nötig
   zeichne();
 });
 
 nachbar2Feld.addEventListener("change", () => {
   nachbar2 = leseGanzzahl(nachbar2Feld, 0, 8, nachbar2);
-  leeren();
-  zufall(0.25);
+  zufall(0.25); // überschreibt jede Zelle, leeren davor ist nicht nötig
   zeichne();
 });
 
 nachbar3Feld.addEventListener("change", () => {
-  nachbar3 = leseGanzzahl(nachbar3Feld, 0, 8, nachbar3);
-  leeren();
-  zufall(0.25);
+  nachbar3 = leseGanzzahl(nachbar3Feld, 1, 8, nachbar3); // ab 1: mit 0 würde jede leere Fläche sofort lebendig
+  zufall(0.25); // überschreibt jede Zelle, leeren davor ist nicht nötig
   zeichne();
 });
 
 window.addEventListener("resize", () => {
   passeGroesseAn();
   zeichne();
-})
+});
+
+// Startwerte in die Felder schreiben, sonst sind sie am Anfang leer
+nachbar1Feld.value = nachbar1;
+nachbar2Feld.value = nachbar2;
+nachbar3Feld.value = nachbar3;
 
 passeGroesseAn();
 zufall(0.5);
 zeichne();
 requestAnimationFrame(schleife);
+
+
